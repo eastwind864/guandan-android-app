@@ -1,0 +1,69 @@
+plugins {
+    id 'com.android.application'
+}
+
+// versionCode 用 git 提交数自动递增，避免手动改
+def gitVersionCode() {
+    try {
+        def proc = ['git', 'rev-list', '--count', 'HEAD'].execute(null, project.projectDir)
+        proc.waitFor()
+        return proc.text.trim().toInteger()
+    } catch (Exception e) {
+        println "warning: git rev-list failed (${e.message}); versionCode falls back to 1"
+        return 1
+    }
+}
+
+android {
+    namespace = 'com.hanazar.guandanserver'
+    compileSdk 37
+
+    defaultConfig {
+        applicationId "com.hanazar.guandanserver"
+        minSdk 26
+        targetSdk 34
+        versionCode gitVersionCode()
+        versionName "1.6.7"
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+
+    ndkVersion "26.3.11579264"
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs 'libnode/bin/'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation "com.google.android.material:material:${materialVersion}"
+}
