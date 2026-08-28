@@ -5,6 +5,9 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -57,3 +60,18 @@ jobs:
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/*.apk
+
+      # Keep one public, stable download URL so the phone cannot accidentally
+      # receive an older Actions artifact with the same generic file name.
+      - name: Publish latest family edition APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/signed.apk Guandan-Family-latest.apk
+          if gh release view family-latest >/dev/null 2>&1; then
+            gh release upload family-latest Guandan-Family-latest.apk --clobber
+          else
+            gh release create family-latest Guandan-Family-latest.apk \
+              --title "掌上掼蛋·家庭版（最新测试版）" \
+              --notes "家庭版手机热点联机测试包。安装后由主手机运行内置服务器，其他手机通过热点或同一局域网加入。"
+          fi
