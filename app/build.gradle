@@ -58,6 +58,7 @@ chaquopy {
             install("flask-cors")
             install("flask-socketio")
             install("simple-websocket")
+            install("termcolor")
         }
     }
 }
