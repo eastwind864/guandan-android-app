@@ -49,7 +49,9 @@ android {
 // not need a computer or an Internet connection while playing.
 chaquopy {
     defaultConfig {
-        version = "3.12"
+        // RLCard 1.2.0 is published for Python 3.11; using that supported
+        // runtime keeps the existing family-edition engine intact on Android.
+        version = "3.11"
         pip {
             install("numpy")
             install("rlcard==1.2.0")
