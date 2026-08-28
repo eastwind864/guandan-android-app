@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 启动前台服务，服务内会复制 assets 并拉起 node 服务器
+        // 启动前台服务，服务内会复制家庭版网页并拉起 Python 服务器
         Intent service = new Intent(this, NodeService.class);
         if (Build.VERSION.SDK_INT >= 26) {
             startForegroundService(service);
@@ -93,12 +93,12 @@ public class MainActivity extends AppCompatActivity {
         pollServerStatus();
     }
 
-    /** 轮询本机 node 服务的 /api/info，直到服务器就绪并拿到全部局域网地址 */
+    /** 轮询本机家庭版服务，直到服务器就绪并拿到全部局域网地址 */
     private void pollServerStatus() {
         new Thread(() -> {
             for (int attempt = 0; attempt < 60; attempt++) {
                 try {
-                    URL url = new URL("http://127.0.0.1:" + NodeService.PORT + "/api/info");
+                    URL url = new URL("http://127.0.0.1:" + NodeService.PORT + "/api/server-info");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(1000);
                     conn.setReadTimeout(1000);
@@ -150,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onServerReady(List<String> nodeIps) {
-        // 合并 node 枚举 + Java 侧 NetworkInterface 枚举(LocalSend同款), 去重
+        // 合并 Python 枚举 + Java 侧 NetworkInterface 枚举(LocalSend同款), 去重
         Set<String> merged = new LinkedHashSet<>(nodeIps);
         merged.addAll(enumerateLocalIps());
         List<String> allIps = new ArrayList<>(merged);

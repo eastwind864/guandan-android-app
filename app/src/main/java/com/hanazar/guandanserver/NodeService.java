@@ -13,6 +13,9 @@ import android.content.res.AssetManager;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.chaquo.python.Python;
+import com.chaquo.python.android.AndroidPlatform;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,25 +23,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * 前台服务：把 assets/nodejs-project 复制到 filesDir，
- * 然后启动嵌入的 Node.js 运行时运行 lan-server.cjs（掼蛋局域网服务器）。
+ * 前台服务：复制家庭版网页资源，并启动内置 Python 家庭版服务器。
  */
 public class NodeService extends Service {
     private static final String TAG = "GuandanServer";
     private static final String CHANNEL_ID = "guandan_server";
     private static final int NOTIF_ID = 1;
-    public static final int PORT = 4173;
-
-    // 加载 JNI 桥接库与 node 运行时
-    static {
-        System.loadLibrary("native-lib");
-        System.loadLibrary("node");
-    }
-
-    public static native int startNodeWithArguments(String[] arguments);
-
-    // 只启动一个 node 实例
-    public static boolean _startedNodeAlready = false;
+    public static final int PORT = 5000;
+    private static boolean serverStarted = false;
 
     @Override
     public void onCreate() {
@@ -49,25 +41,31 @@ public class NodeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         startForeground(NOTIF_ID, buildNotification("掼蛋服务器启动中…"));
-        if (!_startedNodeAlready) {
-            _startedNodeAlready = true;
+        if (!serverStarted) {
+            serverStarted = true;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        String nodeDir = getApplicationContext().getFilesDir().getAbsolutePath() + "/nodejs-project";
+                        String dataDir = getApplicationContext().getFilesDir().getAbsolutePath();
+                        String webDir = dataDir + "/family-web";
                         if (wasAPKUpdated()) {
-                            File nodeDirReference = new File(nodeDir);
-                            if (nodeDirReference.exists()) {
-                                deleteFolderRecursively(new File(nodeDir));
+                            File webDirReference = new File(webDir);
+                            if (webDirReference.exists()) {
+                                deleteFolderRecursively(webDirReference);
                             }
-                            copyAssetFolder(getApplicationContext().getAssets(), "nodejs-project", nodeDir);
+                            copyAssetFolder(getApplicationContext().getAssets(), "family-web", webDir);
                             saveLastUpdateTime();
                         }
-                        Log.i(TAG, "starting node: " + nodeDir + "/lan-server.cjs");
-                        startNodeWithArguments(new String[]{"node", nodeDir + "/lan-server.cjs"});
+                        if (!Python.isStarted()) {
+                            Python.start(new AndroidPlatform(getApplicationContext()));
+                        }
+                        Log.i(TAG, "starting family Python server on port " + PORT);
+                        Python.getInstance().getModule("family_backend.mobile_server")
+                                .callAttr("start", dataDir, PORT);
                     } catch (Throwable t) {
-                        Log.e(TAG, "node start failed", t);
+                        Log.e(TAG, "family server start failed", t);
+                        serverStarted = false;
                         stopSelf();
                     }
                 }

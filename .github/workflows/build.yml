@@ -20,22 +20,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Android SDK / NDK / CMake
+      # Android SDK
       - uses: android-actions/setup-android@v3
 
-      - name: Install NDK & CMake
+      - name: Install Android build platform
         run: |
-          sdkmanager --install "ndk;26.3.11579264" "cmake;3.22.1" "platforms;android-37" "build-tools;36.0.0" > /dev/null 2>&1 || true
+          sdkmanager --install "platforms;android-37" "build-tools;36.0.0" > /dev/null 2>&1 || true
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
-
-      # 从 nodejs-mobile release 拉取预编译的 libnode.so + 头文件
-      - name: Fetch nodejs-mobile libnode
-        run: |
-          curl -sL -o /tmp/nodejs-mobile.zip https://github.com/nodejs-mobile/nodejs-mobile/releases/download/v18.20.4/nodejs-mobile-v18.20.4-android.zip
-          unzip -o /tmp/nodejs-mobile.zip -d /tmp/nodejs-mobile
-          mkdir -p app/libnode/bin/arm64-v8a
-          cp /tmp/nodejs-mobile/bin/arm64-v8a/libnode.so app/libnode/bin/arm64-v8a/
-          cp -r /tmp/nodejs-mobile/include/* app/libnode/include/
 
       - name: Build APK
         run: |

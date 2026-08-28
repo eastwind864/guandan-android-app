@@ -1,6 +1,8 @@
 // Top-level build file
 plugins {
-    id 'com.android.application' version '9.3.1' apply false
+    // Chaquopy supports Android Gradle Plugin through 9.2.x.
+    id 'com.android.application' version '9.2.1' apply false
+    id 'com.chaquo.python' version '17.0.0' apply false
 }
 
 // Material Components (MD3) 版本管理

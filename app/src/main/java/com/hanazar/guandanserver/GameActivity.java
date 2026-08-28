@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 内嵌 WebView：加载本机 node 服务器，让开服务器的手机也能直接玩。
+ * 内嵌 WebView：加载本机家庭版服务器，让开服务器的手机也能直接玩。
  * 支持页面内 Fullscreen API（onShowCustomView），配合前端全屏按钮使用。
  */
 public class GameActivity extends AppCompatActivity {
