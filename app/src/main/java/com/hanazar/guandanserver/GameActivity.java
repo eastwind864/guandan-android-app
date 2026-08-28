@@ -12,6 +12,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -77,6 +78,7 @@ public class GameActivity extends AppCompatActivity {
     private FrameLayout fullscreenContainer;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
+    private int loadAttempts = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +103,18 @@ public class GameActivity extends AppCompatActivity {
         settings.setUseWideViewPort(true);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                super.onReceivedError(view, errorCode, description, failingUrl);
+                if (loadAttempts++ < 8) {
+                    view.postDelayed(() -> view.reload(), 1000);
+                } else {
+                    Toast.makeText(GameActivity.this,
+                            "家庭版服务器未能启动。请返回首页查看原因。", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onShowCustomView(View view, CustomViewCallback callback) {

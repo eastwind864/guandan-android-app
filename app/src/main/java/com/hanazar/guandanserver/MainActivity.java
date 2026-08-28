@@ -59,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
         qrView = findViewById(R.id.ivQr);
         openButton = findViewById(R.id.btnOpen);
         copyButton = findViewById(R.id.btnCopy);
+        openButton.setEnabled(false);
+        copyButton.setEnabled(false);
 
         if (Build.VERSION.SDK_INT >= 33) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -75,6 +77,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         openButton.setOnClickListener(v -> {
+            if (!openButton.isEnabled()) {
+                Toast.makeText(this, "家庭版服务器还在启动，请稍候", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent i = new Intent(this, GameActivity.class);
             startActivity(i);
         });
@@ -97,6 +103,11 @@ public class MainActivity extends AppCompatActivity {
     private void pollServerStatus() {
         new Thread(() -> {
             for (int attempt = 0; attempt < 60; attempt++) {
+                String startupError = NodeService.getStartupError();
+                if (startupError != null) {
+                    runOnUiThread(() -> showStartupFailure(startupError));
+                    return;
+                }
                 try {
                     URL url = new URL("http://127.0.0.1:" + NodeService.PORT + "/api/server-info");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -126,7 +137,8 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
             }
-            runOnUiThread(() -> statusView.setText("服务器启动失败，请查看日志"));
+            runOnUiThread(() -> showStartupFailure(
+                    "60 秒内未能启动。请关闭应用后重新打开；若仍失败，请把此页面截图发给我。"));
         }).start();
     }
 
@@ -164,9 +176,19 @@ public class MainActivity extends AppCompatActivity {
         }
         statusView.setText("● 服务器运行中");
         addressView.setText(sb.toString().trim());
+        openButton.setEnabled(true);
+        copyButton.setEnabled(true);
         Bitmap qr = generateQr(mainUrl, 480);
         if (qr != null) qrView.setImageBitmap(qr);
         NodeService.updateNotification(this, "服务器运行中 · " + mainUrl);
+    }
+
+    private void showStartupFailure(String reason) {
+        statusView.setText("服务器启动失败");
+        addressView.setText(reason);
+        openButton.setEnabled(false);
+        copyButton.setEnabled(false);
+        NodeService.updateNotification(this, "服务器启动失败");
     }
 
     /** LocalSend 同款: 用 Android NetworkInterface 枚举所有接口的 IPv4(含 WiFi/热点/以太网/蓝牙/USB 共享等) */

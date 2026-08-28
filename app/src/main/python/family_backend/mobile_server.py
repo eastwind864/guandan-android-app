@@ -23,6 +23,7 @@ from .game_manager import Game
 _lock = threading.RLock()
 _rooms: dict[str, dict] = {}
 _started = False
+_server_error: str | None = None
 
 
 def _addresses():
@@ -39,11 +40,12 @@ def _addresses():
 
 def start(data_dir: str, port: int = 5000):
     """Start the family-edition game server once for this Android process."""
-    global _started
+    global _started, _server_error
     with _lock:
         if _started:
             return "already-started"
         _started = True
+        _server_error = None
 
     static_dir = os.path.join(data_dir, "family-web")
     app = Flask(__name__, static_folder=static_dir, static_url_path="")
@@ -188,8 +190,19 @@ def start(data_dir: str, port: int = 5000):
         for room in _rooms.values():
             room.get("clients", {}).pop(request.sid, None)
 
-    thread = threading.Thread(
-        target=lambda: io.run(app, host="0.0.0.0", port=int(port),
-                              allow_unsafe_werkzeug=True), daemon=True)
+    def run_server():
+        global _server_error
+        try:
+            # Explicitly disable the reloader: Android hosts this interpreter
+            # inside a foreground service and must not fork a second process.
+            io.run(app, host="0.0.0.0", port=int(port),
+                   allow_unsafe_werkzeug=True, use_reloader=False,
+                   log_output=False)
+        except BaseException as exc:
+            _server_error = f"{type(exc).__name__}: {exc}"
+            raise
+
+    thread = threading.Thread(target=run_server, daemon=True,
+                              name="GuandanFamilyServer")
     thread.start()
     return "started"

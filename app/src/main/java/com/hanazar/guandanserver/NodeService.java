@@ -31,6 +31,7 @@ public class NodeService extends Service {
     private static final int NOTIF_ID = 1;
     public static final int PORT = 5000;
     private static boolean serverStarted = false;
+    private static volatile String startupError = null;
 
     @Override
     public void onCreate() {
@@ -43,6 +44,7 @@ public class NodeService extends Service {
         startForeground(NOTIF_ID, buildNotification("掼蛋服务器启动中…"));
         if (!serverStarted) {
             serverStarted = true;
+            startupError = null;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -65,6 +67,9 @@ public class NodeService extends Service {
                                 .callAttr("start", dataDir, PORT);
                     } catch (Throwable t) {
                         Log.e(TAG, "family server start failed", t);
+                        startupError = t.getClass().getSimpleName() + ": "
+                                + (t.getMessage() == null ? "未知启动错误" : t.getMessage());
+                        updateNotification(getApplicationContext(), "服务器启动失败");
                         serverStarted = false;
                         stopSelf();
                     }
@@ -77,6 +82,11 @@ public class NodeService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    /** 供首页显示内嵌 Python 的启动失败原因，避免只看到网页拒绝连接。 */
+    public static String getStartupError() {
+        return startupError;
     }
 
     /** 更新前台通知文案（MainActivity 拿到局域网地址后调用） */
